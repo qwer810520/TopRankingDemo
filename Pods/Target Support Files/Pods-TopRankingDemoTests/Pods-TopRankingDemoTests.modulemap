@@ -1,0 +1,6 @@
+framework module Pods_TopRankingDemoTests {
+  umbrella header "Pods-TopRankingDemoTests-umbrella.h"
+
+  export *
+  module * { export * }
+}
