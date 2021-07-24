@@ -65,7 +65,7 @@ class TopRankingView: UIView {
     return view
   }()
 
-  lazy private var ranfingResultCollectionView: UICollectionView = {
+  lazy var ranfingResultCollectionView: UICollectionView = {
     let view = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
     view.translatesAutoresizingMaskIntoConstraints = false
     view.dataSource = self
@@ -87,6 +87,8 @@ class TopRankingView: UIView {
 
   // MARK: - Initialization
 
+  private var numberList = Array(1...10)
+
   init() {
     super.init(frame: .zero)
     setupUserInterface()
@@ -95,6 +97,51 @@ class TopRankingView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+
+  // MARK: - test Move cell
+
+  private func findCell(with index: Int) -> UICollectionViewCell {
+    guard let cell = ranfingResultCollectionView.cellForItem(at: IndexPath(item: index, section: 0)) else {
+      fatalError("Not get cell")
+    }
+    return cell
+  }
+
+  private func findCells(with startIndex: Int, and endIndex: Int) -> [UICollectionViewCell] {
+    let range = startIndex - endIndex
+    let endRange = endIndex + range
+    return Array(endIndex...endRange).map {
+      let cell = findCell(with: $0)
+      print("index: \($0), with cell frame: \(cell.frame)")
+      return cell
+    }
+  }
+
+  func moveCell(with startIndex: Int, to endIndex: Int) {
+    let startValue = numberList[startIndex]
+    let startCell = findCell(with: startIndex)
+    let endCells = findCells(with: startIndex, and: endIndex)
+
+    let animation = UIViewPropertyAnimator(duration: 1, curve: .easeOut) {
+      startCell.layer.zPosition = 100
+    }
+
+    animation.addAnimations {
+      let space: CGFloat = startCell.frame.height + 10
+      endCells.forEach { $0.frame.origin.y += space }
+      startCell.frame.origin.y -= (space * CGFloat(endCells.count))
+    }
+
+    animation.addCompletion { [weak self] _ in
+      self?.numberList.remove(at: startIndex)
+      self?.numberList.insert(startValue, at: endIndex)
+      self?.ranfingResultCollectionView.reloadData()
+    }
+
+    animation.startAnimation()
+  }
+
+
 
   // MARK: - Private Methods
 
@@ -108,7 +155,7 @@ class TopRankingView: UIView {
   private func setupLayout() {
     snp.makeConstraints {
       $0.width.equalTo(130)
-      $0.height.equalTo(TopRankingTelescopicType.shorten.height)
+      $0.height.equalTo(TopRankingTelescopicType.elongation.height)
     }
 
     topImageView.snp.makeConstraints {
@@ -164,7 +211,7 @@ class TopRankingView: UIView {
 extension TopRankingView: UICollectionViewDelegateFlowLayout {
   func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
     let widthAndHeight = collectionView.frame.width - 10
-    return .init(width: widthAndHeight, height: widthAndHeight)
+    return .init(width: widthAndHeight, height: 40)
   }
 
   func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
@@ -174,19 +221,25 @@ extension TopRankingView: UICollectionViewDelegateFlowLayout {
   func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
     return 10
   }
+
+  func collectionView(_ collectionView: UICollectionView, canMoveItemAt indexPath: IndexPath) -> Bool {
+    return true
+  }
 }
 
 // MARK: - UICollectionViewDataSource
 
 extension TopRankingView: UICollectionViewDataSource {
   func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-    return 10
+    return numberList.count
   }
 
   func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
     guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: DemoCell.identifier, for: indexPath) as? DemoCell else {
       fatalError("Cell init fail")
     }
+
+    cell.title = "\(numberList[indexPath.item])"
     return cell
   }
 }
